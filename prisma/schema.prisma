@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BoardColumn {
+  TO_DO
+  IN_PROGRESS
+  READY_FOR_TESTING
+  TESTING
+  DONE
+}
+
+enum TaskPriority {
+  HIGHEST
+  MEDIUM
+  LOWEST
+}
+
+model User {
+  identifier        String    @id @default(uuid())
+  firstname         String    @db.VarChar(255)
+  surname           String    @db.VarChar(255)
+  email             String    @unique @db.VarChar(255)
+  ownedBoards       Board[]   @relation("OwnedBoards")
+  createdTasks      Task[]    @relation("CreatedTasks")
+  tasks             Task[]    @relation("AssignedTasks")
+  contributedBoards Board[]
+  createdComments   Comment[]
+  isArchived        Boolean   @db.Boolean
+}
+
+model Board {
+  identifier   String  @id @default(uuid())
+  shortcut     String  @unique @db.VarChar(3)
+  name         String  @db.VarChar(30)
+  ownerId      String  @db.Uuid
+  owner        User    @relation("OwnedBoards", fields: [ownerId], references: [identifier])
+  contributors User[]
+  tasks        Task[]
+  isArchived   Boolean @db.Boolean
+}
+
+model Task {
+  identifier     String        @id @default(uuid())
+  title          String        @db.VarChar(255)
+  taskNumber     String        @db.VarChar(255)
+  description    String        @db.VarChar(255)
+  creationDate   DateTime?     @db.Date
+  reporterId     String        @db.Uuid
+  reporter       User          @relation("CreatedTasks", fields: [reporterId], references: [identifier])
+  assignedUserId String        @db.Uuid
+  assignedUser   User          @relation("AssignedTasks", fields: [assignedUserId], references: [identifier])
+  boardColumn    BoardColumn
+  taskPriority   TaskPriority?
+  orderInColumn  Int           @db.Integer
+  comments       Comment[]
+  loggedTime     Float?        @db.DoublePrecision
+  boardId        String        @db.Uuid
+  board          Board         @relation(fields: [boardId], references: [identifier])
+  isArchived     Boolean       @db.Boolean
+}
+
+model Comment {
+  identifier   String    @id @default(uuid())
+  content      String    @db.VarChar(2000)
+  creatorId    String    @db.Uuid
+  creator      User      @relation(fields: [creatorId], references: [identifier])
+  creationDate DateTime? @db.Date
+  taskId       String    @db.Uuid
+  task         Task      @relation(fields: [taskId], references: [identifier])
+  isArchived   Boolean   @db.Boolean
+}
