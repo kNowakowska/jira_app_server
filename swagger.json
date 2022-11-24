@@ -1,0 +1,22 @@
+{
+    "swagger": "2.0",
+    "info": {
+      "version": "1.0.0",
+      "title": "JIRA API",
+      "description": "API for simple web app created for projects management",
+      "license": {
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT"
+      }
+    },
+    "host": "localhost:8081",
+    "basePath": "/",
+    "tags": [
+      {
+        "name": "Users"
+      }
+    ],
+    "schemes": ["http"],
+    "consumes": ["application/json"],
+    "produces": ["application/json"]
+  }
