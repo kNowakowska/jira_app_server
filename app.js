@@ -9,6 +9,8 @@ var usersRouter = require("./routes/users");
 var boardsRouter = require("./routes/boards");
 var authRouter = require("./routes/auth");
 
+const { isAuthenticated } = require("./middleware/authenticate");
+
 var app = express();
 
 // view engine setup
@@ -20,6 +22,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+app.use(["/auth/logout", "/boards", "/tasks", "/users"], isAuthenticated);
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/boards", boardsRouter);

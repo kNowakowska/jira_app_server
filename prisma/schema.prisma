@@ -29,6 +29,7 @@ model User {
   firstname         String    @db.VarChar(255)
   surname           String    @db.VarChar(255)
   email             String    @unique @db.VarChar(255)
+  password          String?    @db.VarChar(1000)
   ownedBoards       Board[]   @relation("OwnedBoards")
   createdTasks      Task[]    @relation("CreatedTasks")
   tasks             Task[]    @relation("AssignedTasks")
