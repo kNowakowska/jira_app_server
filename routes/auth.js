@@ -12,8 +12,12 @@ router.post("/login", async (req, res) => {
     where: { email: email },
   });
 
-  if (!checkPassword(user, password))
-    res.status(403).json("Invalid email or password!");
+  const passwordCheck = await checkPassword(user, password);
+  if (!passwordCheck)
+    res.status(403).json({
+      message: "Invalid email or password!",
+      reasonCode: "INVALID EMAIL OR PASSWORD",
+    });
 
   const token = generateAccessToken({
     username: user.email,
@@ -25,8 +29,8 @@ router.post("/login", async (req, res) => {
 
 router.post("/logout", async (req, res) => {
   const { userIdentifier } = req.body;
-  //TODO: delete token 
-  res.status(200);
+  //TODO: delete token
+  res.sendStatus(200);
 });
 
 module.exports = router;

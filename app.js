@@ -8,14 +8,29 @@ var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var boardsRouter = require("./routes/boards");
 var authRouter = require("./routes/auth");
+const cors = require("cors");
+
+var livereload = require("livereload");
+var connectLiveReload = require("connect-livereload");
 
 const { isAuthenticated } = require("./middleware/authenticate");
+
+const liveReloadServer = livereload.createServer();
+liveReloadServer.server.once("connection", () => {
+  setTimeout(() => {
+    liveReloadServer.refresh("/");
+  }, 100);
+});
 
 var app = express();
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
+
+app.use(cors());
+
+app.use(connectLiveReload());
 
 app.use(logger("dev"));
 app.use(express.json());
