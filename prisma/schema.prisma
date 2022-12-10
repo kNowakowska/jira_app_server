@@ -57,8 +57,8 @@ model Task {
   creationDate   DateTime?     @db.Date
   reporterId     String        @db.Uuid
   reporter       User          @relation("CreatedTasks", fields: [reporterId], references: [identifier])
-  assignedUserId String        @db.Uuid
-  assignedUser   User          @relation("AssignedTasks", fields: [assignedUserId], references: [identifier])
+  assignedUserId String?        @db.Uuid
+  assignedUser   User?         @relation("AssignedTasks", fields: [assignedUserId], references: [identifier])
   boardColumn    BoardColumn
   taskPriority   TaskPriority?
   orderInColumn  Int           @db.Integer

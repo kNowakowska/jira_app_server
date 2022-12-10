@@ -13,7 +13,7 @@ const cors = require("cors");
 var livereload = require("livereload");
 var connectLiveReload = require("connect-livereload");
 
-const { isAuthenticated } = require("./middleware/authenticate");
+const { isAuthenticated, noCacheValues } = require("./middleware/authenticate");
 
 const liveReloadServer = livereload.createServer();
 liveReloadServer.server.once("connection", () => {
@@ -37,6 +37,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+app.use(noCacheValues);
 app.use(["/auth/logout", "/boards", "/tasks", "/users"], isAuthenticated);
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
