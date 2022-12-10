@@ -9,13 +9,46 @@ const {
   BoardNotFound,
   NoRequiredData,
   BoardNotCreated,
-  BoardOrUserNotFound,
+  BoardNotUpdated,
+  BoardDeleted,
+  BoardNotDeleted,
+  BoardActionForbidden,
 } = require("../errors/boards");
 const { CannotAssignUser } = require("../errors/tasks");
 const { getNextOrderInColumn, getNextTaskNumber } = require("../utils");
 
+const errorIfNotContributorOrOwner = async (userId, boardId) => {
+  const board = await prisma.user.findUnique({
+    where: {
+      identifier: boardId,
+    },
+  });
+  if (
+    userId !== board.ownerId &&
+    !board.contributors.map((board) => board.identifier).includes(userId)
+  ) {
+    res.status(403).json(BoardActionForbidden);
+    return;
+  }
+};
+
+const errorIfNotOwner = async (userId, boardId) => {
+  const boardToUpdate = await prisma.board.findUnique({
+    where: {
+      identifier: boardId,
+    },
+  });
+  if (userId !== boardToUpdate.ownerId) {
+    res.status(403).json(BoardActionForbidden);
+    return;
+  }
+};
+
 router.get("/", async (req, res) => {
-  if (!req.user.identifier) return res.status(404).json(NoReqUser);
+  if (!req.user.identifier) {
+    res.status(404).json(NoReqUser);
+    return;
+  }
   const boards = await prisma.board.findMany({
     where: {
       OR: [
@@ -56,14 +89,36 @@ router.get("/", async (req, res) => {
           identifier: true,
         },
       },
-      tasks: true,
+      tasks: {
+        include: {
+          assignedUser: {
+            select: {
+              firstname: true,
+              surname: true,
+              email: true,
+              identifier: true,
+            },
+          },
+          reporter: {
+            select: {
+              firstname: true,
+              surname: true,
+              email: true,
+              identifier: true,
+            },
+          },
+        },
+      },
     },
   });
   res.status(200).json(boards);
 });
 
 router.get("/contributed", async (req, res) => {
-  if (!req.user.identifier) return res.status(404).json(NoReqUser);
+  if (!req.user.identifier) {
+    res.status(404).json(NoReqUser);
+    return;
+  }
   const boards = await prisma.board.findMany({
     where: {
       isArchived: false,
@@ -92,7 +147,26 @@ router.get("/contributed", async (req, res) => {
           identifier: true,
         },
       },
-      tasks: true,
+      tasks: {
+        include: {
+          assignedUser: {
+            select: {
+              firstname: true,
+              surname: true,
+              email: true,
+              identifier: true,
+            },
+          },
+          reporter: {
+            select: {
+              firstname: true,
+              surname: true,
+              email: true,
+              identifier: true,
+            },
+          },
+        },
+      },
     },
   });
   res.json(boards);
@@ -129,7 +203,26 @@ router.get("/owned", async (req, res) => {
           identifier: true,
         },
       },
-      tasks: true,
+      tasks: {
+        include: {
+          assignedUser: {
+            select: {
+              firstname: true,
+              surname: true,
+              email: true,
+              identifier: true,
+            },
+          },
+          reporter: {
+            select: {
+              firstname: true,
+              surname: true,
+              email: true,
+              identifier: true,
+            },
+          },
+        },
+      },
     },
   });
   res.json(boards);
@@ -137,6 +230,7 @@ router.get("/owned", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
+
   const board = await prisma.board.findUnique({
     where: { identifier: id },
     include: {
@@ -159,8 +253,14 @@ router.get("/:id", async (req, res) => {
       tasks: true,
     },
   });
+  await errorIfNotContributorOrOwner(req.user.identifier, id);
+
   if (!board) {
     res.status(404).json(BoardNotFound);
+    return;
+  }
+  if (board.isArchived) {
+    res.status(400).json(BoardDeleted);
     return;
   }
   res.json(board);
@@ -197,6 +297,8 @@ router.put("/:id", async (req, res) => {
     res.status(400).json(NoRequiredData);
     return;
   }
+
+  await errorIfNotOwner(req.user.identifier, id);
   let board = null;
   try {
     board = await prisma.board.update({
@@ -206,7 +308,11 @@ router.put("/:id", async (req, res) => {
       },
     });
   } catch (e) {
-    res.status(400).json(BoardNotFound);
+    res.status(400).json(BoardNotUpdated);
+    return;
+  }
+  if (board.isArchived) {
+    res.status(400).json(BoardDeleted);
     return;
   }
   res.status(200).json(board);
@@ -218,10 +324,16 @@ router.delete("/:id", async (req, res) => {
   const boardToDelete = await prisma.board.findUnique({
     where: { identifier: id },
   });
+
   if (!boardToDelete) {
     res.status(400).json(BoardNotFound);
     return;
   }
+  if (boardToDelete.isArchived) {
+    res.status(400).json(BoardDeleted);
+    return;
+  }
+  await errorIfNotOwner(req.user.identifier, id);
 
   let board = null;
   try {
@@ -234,7 +346,7 @@ router.delete("/:id", async (req, res) => {
       },
     });
   } catch (e) {
-    res.status(400).json(BoardNotFound);
+    res.status(400).json(BoardNotDeleted);
     return;
   }
   res.status(204).json(board);
@@ -242,10 +354,13 @@ router.delete("/:id", async (req, res) => {
 
 router.put("/:id/users/:userId", async (req, res) => {
   const { id, userId } = req.params;
+
   if (!id || !userId) {
     res.status(400).json(NoRequiredData);
     return;
   }
+  await errorIfNotOwner(req.user.identifier, id);
+
   let board = null;
   try {
     board = await prisma.board.update({
@@ -259,7 +374,7 @@ router.put("/:id/users/:userId", async (req, res) => {
       },
     });
   } catch (e) {
-    res.status(400).json(BoardOrUserNotFound);
+    res.status(400).json(BoardNotUpdated);
     return;
   }
   res.status(200).json(board);
@@ -267,10 +382,14 @@ router.put("/:id/users/:userId", async (req, res) => {
 
 router.delete("/:id/users/:userId", async (req, res) => {
   const { id, userId } = req.params;
+
   if (!id || !userId) {
     res.status(400).json(NoRequiredData);
     return;
   }
+
+  await errorIfNotOwner(req.user.identifier, id);
+
   let board = null;
   try {
     board = await prisma.board.update({
@@ -284,7 +403,7 @@ router.delete("/:id/users/:userId", async (req, res) => {
       },
     });
   } catch (e) {
-    res.status(400).json(BoardOrUserNotFound);
+    res.status(400).json(BoardNotUpdated);
     return;
   }
   res.status(200).json(board);
@@ -292,16 +411,51 @@ router.delete("/:id/users/:userId", async (req, res) => {
 
 router.get("/:boardId/tasks", async (req, res) => {
   const { boardId } = req.params;
+  const { search, assignedUserIdentifier } = req.query;
+
   if (!boardId) {
     res.status(400).json(BoardNotFound);
     return;
   }
 
+  await errorIfNotContributorOrOwner(req.user.identifier, boardId);
+
+  const filters = {
+    isArchived: false,
+    board: {
+      identifier: boardId,
+    },
+  };
+  if (search) {
+    filters["taskNumber"] = {
+      equals: search,
+    };
+  }
+
+  if (assignedUserIdentifier) {
+    filters["assignedUser"] = {
+      identifier: assignedUserIdentifier,
+    };
+  }
+
   const tasks = await prisma.task.findMany({
-    where: {
-      isArchived: false,
-      board: {
-        identifier: boardId,
+    where: filters,
+    include: {
+      assignedUser: {
+        select: {
+          identifier: true,
+          email: true,
+          firstname: true,
+          surname: true,
+        },
+      },
+      reporter: {
+        select: {
+          identifier: true,
+          email: true,
+          firstname: true,
+          surname: true,
+        },
       },
     },
   });
@@ -322,6 +476,7 @@ router.post("/:boardId/tasks", async (req, res) => {
     res.status(400).json(BoardNotFound);
     return;
   }
+  await errorIfNotContributorOrOwner(req.user.identifier, boardId);
 
   if (!title || !description || !boardColumn || !taskPriority) {
     res.status(400).json(NoRequiredData);

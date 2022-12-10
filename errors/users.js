@@ -13,4 +13,19 @@ const UserExists = {
   message: "Użytkownik o podanym adresie e-mail już istnieje.",
 };
 
-module.exports = { UserNotFound, NoRequiredData, UserExists };
+const UserForbiddenAction = {
+  reasonCode: "USER_FORBIDDEN_ACTION",
+  message: "Brak uprawnień do wykonania tej operacji",
+};
+
+const UserUpdateError = {
+  reasonCode: "USER_UPDATE_ERROR",
+  message: "Edycja użytkownika nie powiodła się",
+};
+module.exports = {
+  UserNotFound,
+  NoRequiredData,
+  UserExists,
+  UserForbiddenAction,
+  UserUpdateError,
+};

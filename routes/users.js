@@ -1,7 +1,13 @@
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcrypt");
 const express = require("express");
-const { UserNotFound, UserExists, NoRequiredData } = require("../errors/users");
+const {
+  UserNotFound,
+  UserExists,
+  NoRequiredData,
+  UserForbiddenAction,
+  UserUpdateError,
+} = require("../errors/users");
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -21,6 +27,10 @@ router.get("/", async (_req, res) => {
 
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
+  if (req.user.identifier !== id) {
+    res.status(403).json(UserForbiddenAction);
+    return;
+  }
   const user = await prisma.user.findFirst({
     where: { identifier: id, isArchived: false },
     select: {
@@ -70,9 +80,15 @@ router.patch("/:id", async (req, res) => {
   const { id } = req.params;
   const { firstname, surname, email, password } = req.body;
 
+  if (req.user.identifier !== id) {
+    res.status(403).json(UserForbiddenAction);
+    return;
+  }
+
   const existingUser = await prisma.user.findUnique({
     where: { identifier: id },
   });
+
   if (!existingUser) {
     res.status(400).json(UserNotFound);
     return;
@@ -98,10 +114,12 @@ router.patch("/:id", async (req, res) => {
     surname: surname || existingUser.surname,
     email: email || existingUser.email,
   };
+
   if (password) {
     const encryptedPswd = bcrypt.hashSync(password, 10);
     userUpdateData["password"] = encryptedPswd;
   }
+
   let user = null;
   try {
     user = await prisma.user.update({
@@ -115,7 +133,7 @@ router.patch("/:id", async (req, res) => {
       },
     });
   } catch (e) {
-    res.status(400).json(UserNotFound);
+    res.status(400).json(UserUpdateError);
     return;
   }
   res.json(user);
@@ -123,6 +141,12 @@ router.patch("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
+
+  if (req.user.identifier !== id) {
+    res.status(403).json(UserForbiddenAction);
+    return;
+  }
+
   const existingUser = await prisma.user.findUnique({
     where: {
       identifier: id,
@@ -150,7 +174,7 @@ router.delete("/:id", async (req, res) => {
       },
     });
   } catch (e) {
-    res.status(400).json(UserNotFound);
+    res.status(400).json(UserUpdateError);
     return;
   }
   //TODO: Add deleting token to ensure user cannot log in again
