@@ -3,4 +3,14 @@ const CannotAssignUser = {
   message: "Przypisanie użytkownika do zadania nie powiodło się.",
 };
 
-module.exports = { CannotAssignUser };
+const TaskNotFound = {
+  reasonCode: "TASK_NOT_FOUND",
+  message: "Nie odnaleziono zadania",
+};
+
+const NoRequiredData = {
+  reasonCode: "NO_REQUIRED_DATA",
+  message: "Nie podano wymaganych danych",
+};
+
+module.exports = { CannotAssignUser, TaskNotFound, NoRequiredData };

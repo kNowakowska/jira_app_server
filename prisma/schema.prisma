@@ -74,7 +74,7 @@ model Comment {
   content      String    @db.VarChar(2000)
   creatorId    String    @db.Uuid
   creator      User      @relation(fields: [creatorId], references: [identifier])
-  creationDate DateTime? @db.Date
+  createdDate DateTime? @db.Date
   taskId       String    @db.Uuid
   task         Task      @relation(fields: [taskId], references: [identifier])
   isArchived   Boolean   @default(false) @db.Boolean

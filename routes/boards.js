@@ -56,7 +56,26 @@ router.get("/", async (req, res) => {
           identifier: true,
         },
       },
-      tasks: true,
+      tasks: {
+        include: {
+          assignedUser: {
+            select: {
+              firstname: true,
+              surname: true,
+              email: true,
+              identifier: true,
+            },
+          },
+          reporter: {
+            select: {
+              firstname: true,
+              surname: true,
+              email: true,
+              identifier: true,
+            },
+          },
+        },
+      },
     },
   });
   res.status(200).json(boards);
@@ -92,7 +111,26 @@ router.get("/contributed", async (req, res) => {
           identifier: true,
         },
       },
-      tasks: true,
+      tasks: {
+        include: {
+          assignedUser: {
+            select: {
+              firstname: true,
+              surname: true,
+              email: true,
+              identifier: true,
+            },
+          },
+          reporter: {
+            select: {
+              firstname: true,
+              surname: true,
+              email: true,
+              identifier: true,
+            },
+          },
+        },
+      },
     },
   });
   res.json(boards);
@@ -129,7 +167,26 @@ router.get("/owned", async (req, res) => {
           identifier: true,
         },
       },
-      tasks: true,
+      tasks: {
+        include: {
+          assignedUser: {
+            select: {
+              firstname: true,
+              surname: true,
+              email: true,
+              identifier: true,
+            },
+          },
+          reporter: {
+            select: {
+              firstname: true,
+              surname: true,
+              email: true,
+              identifier: true,
+            },
+          },
+        },
+      },
     },
   });
   res.json(boards);
@@ -218,6 +275,7 @@ router.delete("/:id", async (req, res) => {
   const boardToDelete = await prisma.board.findUnique({
     where: { identifier: id },
   });
+
   if (!boardToDelete) {
     res.status(400).json(BoardNotFound);
     return;
@@ -242,10 +300,12 @@ router.delete("/:id", async (req, res) => {
 
 router.put("/:id/users/:userId", async (req, res) => {
   const { id, userId } = req.params;
+
   if (!id || !userId) {
     res.status(400).json(NoRequiredData);
     return;
   }
+
   let board = null;
   try {
     board = await prisma.board.update({
@@ -267,10 +327,12 @@ router.put("/:id/users/:userId", async (req, res) => {
 
 router.delete("/:id/users/:userId", async (req, res) => {
   const { id, userId } = req.params;
+
   if (!id || !userId) {
     res.status(400).json(NoRequiredData);
     return;
   }
+
   let board = null;
   try {
     board = await prisma.board.update({
@@ -292,6 +354,7 @@ router.delete("/:id/users/:userId", async (req, res) => {
 
 router.get("/:boardId/tasks", async (req, res) => {
   const { boardId } = req.params;
+
   if (!boardId) {
     res.status(400).json(BoardNotFound);
     return;
@@ -302,6 +365,24 @@ router.get("/:boardId/tasks", async (req, res) => {
       isArchived: false,
       board: {
         identifier: boardId,
+      },
+    },
+    include: {
+      assignedUser: {
+        select: {
+          identifier: true,
+          email: true,
+          firstname: true,
+          surname: true,
+        },
+      },
+      reporter: {
+        select: {
+          identifier: true,
+          email: true,
+          firstname: true,
+          surname: true,
+        },
       },
     },
   });

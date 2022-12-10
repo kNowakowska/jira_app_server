@@ -8,6 +8,9 @@ var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var boardsRouter = require("./routes/boards");
 var authRouter = require("./routes/auth");
+const taskRouter = require("./routes/tasks");
+const commentRouter = require("./routes/comments");
+
 const cors = require("cors");
 
 var livereload = require("livereload");
@@ -38,11 +41,16 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 app.use(noCacheValues);
-app.use(["/auth/logout", "/boards", "/tasks", "/users"], isAuthenticated);
+app.use(
+  ["/auth/logout", "/boards", "/tasks", "/users", "/comments"],
+  isAuthenticated
+);
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/boards", boardsRouter);
 app.use("/auth", authRouter);
+app.use("/tasks", taskRouter);
+app.use("/comments", commentRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
