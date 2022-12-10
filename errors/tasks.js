@@ -13,4 +13,26 @@ const NoRequiredData = {
   message: "Nie podano wymaganych danych",
 };
 
-module.exports = { CannotAssignUser, TaskNotFound, NoRequiredData };
+const TaskDeleted = {
+  reasonCode: "TASK_DELETED",
+  message: "Zadanie usunięte bez możliwości edycji. ",
+};
+
+const TaskUpdateError = {
+  reasonCode: "TASK_UPDATE_ERROR",
+  message: "Modyfikacja zadania nie powiodła się. ",
+};
+
+const TaskForbiddenAction = {
+  reasonCode: "TASK_FORBIDDEN_ACTION",
+  message: "Brak uprawnień do wykonania tej akcji",
+};
+
+module.exports = {
+  CannotAssignUser,
+  TaskNotFound,
+  NoRequiredData,
+  TaskDeleted,
+  TaskUpdateError,
+  TaskForbiddenAction,
+};

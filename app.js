@@ -4,7 +4,6 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 
-var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var boardsRouter = require("./routes/boards");
 var authRouter = require("./routes/auth");
@@ -45,7 +44,6 @@ app.use(
   ["/auth/logout", "/boards", "/tasks", "/users", "/comments"],
   isAuthenticated
 );
-app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/boards", boardsRouter);
 app.use("/auth", authRouter);

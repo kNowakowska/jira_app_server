@@ -33,7 +33,7 @@ const getNextTaskNumber = async (boardId) => {
       },
     },
   });
-  return `t-${tasks.length}`;
+  return `t-${tasks.length < 10 ? "0" + tasks.length : tasks.length}`;
 };
 
 module.exports = {

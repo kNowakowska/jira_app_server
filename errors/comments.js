@@ -8,6 +8,11 @@ const CommentNotCreated = {
   message: "Komentarz nie zostal utworzony",
 };
 
+const CommentNotEdited = {
+  reasonCode: "COMMENT_NOT_EDITED",
+  message: "Komentarz nie zostal zmodyfikowany",
+};
+
 const NoRequiredCommentData = {
   reasonCode: "NO_REQUIRED_DATA",
   message: "Nie podano wymaganych danych",
@@ -18,9 +23,16 @@ const ForbiddenAction = {
   message: "Brak uprawnień do wykonania tej akcji.",
 };
 
+const CommentDeleted = {
+  reasonCode: "COMMENT_ALREADY_DELETED",
+  message: "Komentarz usunięty, nie można wykonań akcji",
+};
+
 module.exports = {
   CommentNotCreated,
   CommentNotFound,
   NoRequiredCommentData,
   ForbiddenAction,
+  CommentNotEdited,
+  CommentDeleted,
 };
