@@ -5,7 +5,7 @@ const NoRequiredData = {
 
 const LoginError = {
   message: "Invalid email or password!",
-  reasonCode: "INVALID EMAIL OR PASSWORD",
+  reasonCode: "INVALID_EMAIL_OR_PASSWORD",
 };
 
 module.exports = { NoRequiredData, LoginError };
