@@ -4,7 +4,7 @@ const UserNotFound = {
 };
 
 const NoRequiredData = {
-  reasonCode: "NOT_REQUIRED_DATA",
+  reasonCode: "NO_REQUIRED_DATA",
   message: "Nie podano wszystkich wymaganych danych",
 };
 

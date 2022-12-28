@@ -2,6 +2,8 @@ const request = require("supertest");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+const loginEndpoint = "auth/login";
+
 const user = {
   firstname: "Jack",
   surname: "Sparrow",
@@ -21,14 +23,9 @@ describe("login", () => {
       .post("users")
       .send(user);
     userId = response.body.identifier;
-    console.log(userId);
-    // const loginResponse = await request(process.env.TEST_BASE_URL)
-    //   .post("auth/login")
-    //   .send({ email: user.email, password: user.password });
-    // jwtToken = loginResponse.body.accessToken;
   });
+
   afterAll(async () => {
-    console.log(userId);
     await prisma.user.delete({
       where: { identifier: userId },
     });
@@ -36,7 +33,7 @@ describe("login", () => {
 
   it("no required data given", async () => {
     const response = await request(process.env.TEST_BASE_URL)
-      .post("auth/login")
+      .post(loginEndpoint)
       .send({});
     expect(response.statusCode).toBe(400);
     expect(response.body.reasonCode).toBe("NO_REQUIRED_DATA");
@@ -44,7 +41,7 @@ describe("login", () => {
 
   it("no user with given email", async () => {
     const response = await request(process.env.TEST_BASE_URL)
-      .post("auth/login")
+      .post(loginEndpoint)
       .send({ email: "Ann@xx.pl", password: "test" });
     expect(response.statusCode).toBe(400);
     expect(response.body.reasonCode).toBe("USER_NOT_FOUND");
@@ -52,7 +49,7 @@ describe("login", () => {
 
   it("login correctly", async () => {
     const response = await request(process.env.TEST_BASE_URL)
-      .post("auth/login")
+      .post(loginEndpoint)
       .send({ email: user.email, password: user.password });
     expect(response.statusCode).toBe(200);
     expect(response.body.userIdentifier).toBe(userId);
@@ -61,7 +58,7 @@ describe("login", () => {
 
   it("incorrect password", async () => {
     const response = await request(process.env.TEST_BASE_URL)
-      .post("auth/login")
+      .post(loginEndpoint)
       .send({ email: "jack@xx.pl", password: "incorrect_test" });
     expect(response.statusCode).toBe(403);
     expect(response.body.reasonCode).toBe("INVALID_EMAIL_OR_PASSWORD");
