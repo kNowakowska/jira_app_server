@@ -31,9 +31,7 @@ dotenv -e .env.development npm start
 
 TEST_BASE_URL="http://localhost:8081/"
 TOKEN_SECRET=secret_token_for_jsonwebtoken
-DATABASE_URL="postgresql://user:password@localhost:5433/tests"
-
-Remember to use your own user and password values. Change port number if needed.
+DATABASE_URL="postgresql://prisma:prisma@localhost:5433/tests"
 
 
 3. Run app using: 
