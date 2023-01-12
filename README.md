@@ -9,7 +9,9 @@ Simple server created for Jira App.
 2. Create .env.development file with data:
 
 TEST_BASE_URL="http://localhost:8081/"
+
 TOKEN_SECRET=secret_token_for_jsonwebtoken
+
 DATABASE_URL="postgresql://user:password@localhost:5432/jira_db?schema=public"
 
 Remember to use your own user and password values. Change port number if needed.
@@ -30,7 +32,9 @@ dotenv -e .env.development npm start
 2. Create .env.test file with data:
 
 TEST_BASE_URL="http://localhost:8081/"
+
 TOKEN_SECRET=secret_token_for_jsonwebtoken
+
 DATABASE_URL="postgresql://prisma:prisma@localhost:5433/tests"
 
 
