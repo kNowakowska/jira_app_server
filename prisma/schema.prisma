@@ -43,7 +43,7 @@ model Board {
   shortcut     String  @unique @db.VarChar(3)
   name         String  @db.VarChar(30)
   ownerId      String  @db.Uuid
-  owner        User    @relation("OwnedBoards", fields: [ownerId], references: [identifier])
+  owner        User    @relation("OwnedBoards", fields: [ownerId], references: [identifier], onDelete: Cascade)
   contributors User[]
   tasks        Task[]
   isArchived   Boolean @default(false) @db.Boolean
@@ -56,7 +56,7 @@ model Task {
   description    String        @db.VarChar(255)
   creationDate   DateTime?     @db.Date
   reporterId     String        @db.Uuid
-  reporter       User          @relation("CreatedTasks", fields: [reporterId], references: [identifier])
+  reporter       User          @relation("CreatedTasks", fields: [reporterId], references: [identifier], onDelete: Cascade)
   assignedUserId String?        @db.Uuid
   assignedUser   User?         @relation("AssignedTasks", fields: [assignedUserId], references: [identifier])
   boardColumn    BoardColumn
@@ -65,7 +65,7 @@ model Task {
   comments       Comment[]
   loggedTime     Float?        @db.DoublePrecision
   boardId        String        @db.Uuid
-  board          Board         @relation(fields: [boardId], references: [identifier])
+  board          Board         @relation(fields: [boardId], references: [identifier], onDelete: Cascade)
   isArchived     Boolean       @default(false) @db.Boolean
 }
 
@@ -76,6 +76,6 @@ model Comment {
   creator      User      @relation(fields: [creatorId], references: [identifier])
   createdDate DateTime? @db.Date
   taskId       String    @db.Uuid
-  task         Task      @relation(fields: [taskId], references: [identifier])
+  task         Task      @relation(fields: [taskId], references: [identifier], onDelete: Cascade)
   isArchived   Boolean   @default(false) @db.Boolean
 }

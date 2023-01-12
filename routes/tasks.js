@@ -386,4 +386,157 @@ router.post("/:taskId/comments", async (req, res) => {
   res.json(comment);
 });
 
+router.put("/:taskId/order", async (req, res) => {
+  const { taskId } = req.params;
+  const { positionInColumn } = req.body;
+  if (positionInColumn === undefined) {
+    res.status(400).json(NoRequiredData);
+    return;
+  }
+  const task = await prisma.task.findUnique({
+    where: {
+      identifier: taskId,
+    },
+  });
+
+  if (!task) {
+    res.status(400).json(TaskNotFound);
+    return;
+  }
+
+  const tasksInColumn = await prisma.task.findMany({
+    where: {
+      boardColumn: task.boardColumn,
+      boardId: task.boardId,
+    },
+  });
+
+  if (tasksInColumn.length === 1) {
+    const taskUpdated = await prisma.task.update({
+      where: {
+        identifier: taskId,
+      },
+      data: {
+        ...task,
+        orderInColumn: 0,
+      },
+    });
+    res.json(taskUpdated);
+    return;
+  } else {
+    let taskUpdated = null;
+    const tasksToUpdate = tasksInColumn.filter(
+      (item) => item.identifier !== task.identifier
+    );
+    tasksToUpdate.splice(positionInColumn, 0, task);
+
+    for (const item of tasksToUpdate) {
+      const updatedTask = await prisma.task.update({
+        where: {
+          identifier: item.identifier,
+        },
+        data: {
+          ...item,
+          orderInColumn: tasksToUpdate.findIndex(
+            (elem) => elem.identifier === item.identifier
+          ),
+        },
+      });
+      if (item.identifier === task.identifier) {
+        taskUpdated = updatedTask;
+      }
+    }
+    res.json(taskUpdated);
+    return;
+  }
+});
+
+router.put("/:taskId/columns", async (req, res) => {
+  const { taskId } = req.params;
+  const { positionInColumn, newTaskColumn } = req.body;
+  if (positionInColumn === undefined || !newTaskColumn) {
+    res.status(400).json(NoRequiredData);
+    return;
+  }
+  const task = await prisma.task.findUnique({
+    where: {
+      identifier: taskId,
+    },
+  });
+
+  if (!task) {
+    res.status(400).json(TaskNotFound);
+    return;
+  }
+
+  const tasksInNewColumn = await prisma.task.findMany({
+    where: {
+      boardColumn: newTaskColumn,
+      boardId: task.boardId,
+    },
+  });
+
+  const tasksInOldColumn = await prisma.task.findMany({
+    where: {
+      boardColumn: task.boardColumn,
+      boardId: task.boardId,
+    },
+  });
+
+  if (tasksInOldColumn.length > 1) {
+    tasksInOldColumn.splice(task.positionInColumn, 1);
+    for (const item of tasksInOldColumn) {
+      const updatedTask = await prisma.task.update({
+        where: {
+          identifier: item.identifier,
+        },
+        data: {
+          ...item,
+          orderInColumn: tasksInOldColumn.findIndex(
+            (elem) => elem.identifier === item.identifier
+          ),
+        },
+      });
+    }
+  }
+  if (tasksInNewColumn.length === 0) {
+    const taskUpdated = await prisma.task.update({
+      where: {
+        identifier: taskId,
+      },
+      data: {
+        ...task,
+        orderInColumn: 0,
+        boardColumn: newTaskColumn,
+      },
+    });
+    res.json(taskUpdated);
+    return;
+  } else {
+    let taskUpdated = null;
+    tasksInNewColumn.splice(positionInColumn, 0, task);
+
+    for (const item of tasksInNewColumn) {
+      const updatedTask = await prisma.task.update({
+        where: {
+          identifier: item.identifier,
+        },
+        data: {
+          ...item,
+          orderInColumn: tasksInNewColumn.findIndex(
+            (elem) => elem.identifier === item.identifier
+          ),
+          boardColumn:
+            item.identifier === taskId ? newTaskColumn : item.boardColumn,
+        },
+      });
+      if (item.identifier === task.identifier) {
+        taskUpdated = updatedTask;
+      }
+    }
+    res.json(taskUpdated);
+    return;
+  }
+});
+
 module.exports = router;

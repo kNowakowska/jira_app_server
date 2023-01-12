@@ -17,12 +17,16 @@ const {
 const { CannotAssignUser } = require("../errors/tasks");
 const { getNextOrderInColumn, getNextTaskNumber } = require("../utils");
 
-const errorIfNotContributorOrOwner = async (userId, boardId) => {
-  const board = await prisma.user.findUnique({
+const errorIfNotContributorOrOwner = async (res, userId, boardId) => {
+  const board = await prisma.board.findUnique({
     where: {
       identifier: boardId,
     },
   });
+  if (!board) {
+    res.status(400).json(BoardNotFound);
+    return;
+  }
   if (
     userId !== board.ownerId &&
     !board.contributors.map((board) => board.identifier).includes(userId)
@@ -253,7 +257,7 @@ router.get("/:id", async (req, res) => {
       tasks: true,
     },
   });
-  await errorIfNotContributorOrOwner(req.user.identifier, id);
+  await errorIfNotContributorOrOwner(res, req.user.identifier, id);
 
   if (!board) {
     res.status(404).json(BoardNotFound);
@@ -418,7 +422,7 @@ router.get("/:boardId/tasks", async (req, res) => {
     return;
   }
 
-  await errorIfNotContributorOrOwner(req.user.identifier, boardId);
+  await errorIfNotContributorOrOwner(res, req.user.identifier, boardId);
 
   const filters = {
     isArchived: false,
@@ -476,7 +480,7 @@ router.post("/:boardId/tasks", async (req, res) => {
     res.status(400).json(BoardNotFound);
     return;
   }
-  await errorIfNotContributorOrOwner(req.user.identifier, boardId);
+  await errorIfNotContributorOrOwner(res, req.user.identifier, boardId);
 
   if (!title || !description || !boardColumn || !taskPriority) {
     res.status(400).json(NoRequiredData);
