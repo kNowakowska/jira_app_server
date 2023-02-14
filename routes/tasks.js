@@ -14,6 +14,7 @@ const {
   TaskDeleted,
   TaskUpdateError,
   TaskForbiddenAction,
+  TaskNotUpdated,
 } = require("../errors/tasks");
 
 router.get("/:id", async (req, res) => {
@@ -349,36 +350,41 @@ router.post("/:taskId/comments", async (req, res) => {
   if (!content) {
     res.status(400).json(NoRequiredCommentData);
   }
-
-  const comment = await prisma.comment.create({
-    data: {
-      content: content,
-      creator: {
-        connect: {
-          identifier: req.user.identifier,
+  let comment = null;
+  try {
+    comment = await prisma.comment.create({
+      data: {
+        content: content,
+        creator: {
+          connect: {
+            identifier: req.user.identifier,
+          },
+        },
+        task: {
+          connect: {
+            identifier: taskId,
+          },
+        },
+        createdDate: new Date(),
+      },
+      select: {
+        identifier: true,
+        content: true,
+        createdDate: true,
+        creator: {
+          select: {
+            identifier: true,
+            email: true,
+            firstname: true,
+            surname: true,
+          },
         },
       },
-      task: {
-        connect: {
-          identifier: taskId,
-        },
-      },
-      createdDate: new Date(),
-    },
-    select: {
-      identifier: true,
-      content: true,
-      createdDate: true,
-      creator: {
-        select: {
-          identifier: true,
-          email: true,
-          firstname: true,
-          surname: true,
-        },
-      },
-    },
-  });
+    });
+  } catch (e) {
+    res.status(404).json(CommentNotCreated);
+    return;
+  }
   if (!comment) {
     res.status(404).json(CommentNotCreated);
     return;
@@ -412,15 +418,21 @@ router.put("/:taskId/order", async (req, res) => {
   });
 
   if (tasksInColumn.length === 1) {
-    const taskUpdated = await prisma.task.update({
-      where: {
-        identifier: taskId,
-      },
-      data: {
-        ...task,
-        orderInColumn: 0,
-      },
-    });
+    let taskUpdated = null;
+    try {
+      taskUpdated = await prisma.task.update({
+        where: {
+          identifier: taskId,
+        },
+        data: {
+          ...task,
+          orderInColumn: 0,
+        },
+      });
+    } catch (e) {
+      res.status(400).json(TaskNotUpdated);
+      return;
+    }
     res.json(taskUpdated);
     return;
   } else {
@@ -431,17 +443,23 @@ router.put("/:taskId/order", async (req, res) => {
     tasksToUpdate.splice(positionInColumn, 0, task);
 
     for (const item of tasksToUpdate) {
-      const updatedTask = await prisma.task.update({
-        where: {
-          identifier: item.identifier,
-        },
-        data: {
-          ...item,
-          orderInColumn: tasksToUpdate.findIndex(
-            (elem) => elem.identifier === item.identifier
-          ),
-        },
-      });
+      let updatedTask = null;
+      try {
+        updatedTask = await prisma.task.update({
+          where: {
+            identifier: item.identifier,
+          },
+          data: {
+            ...item,
+            orderInColumn: tasksToUpdate.findIndex(
+              (elem) => elem.identifier === item.identifier
+            ),
+          },
+        });
+      } catch (e) {
+        res.status(400).json(TaskNotUpdated);
+        return;
+      }
       if (item.identifier === task.identifier) {
         taskUpdated = updatedTask;
       }
@@ -486,30 +504,41 @@ router.put("/:taskId/columns", async (req, res) => {
   if (tasksInOldColumn.length > 1) {
     tasksInOldColumn.splice(task.positionInColumn, 1);
     for (const item of tasksInOldColumn) {
-      const updatedTask = await prisma.task.update({
-        where: {
-          identifier: item.identifier,
-        },
-        data: {
-          ...item,
-          orderInColumn: tasksInOldColumn.findIndex(
-            (elem) => elem.identifier === item.identifier
-          ),
-        },
-      });
+      try {
+        const updatedTask = await prisma.task.update({
+          where: {
+            identifier: item.identifier,
+          },
+          data: {
+            ...item,
+            orderInColumn: tasksInOldColumn.findIndex(
+              (elem) => elem.identifier === item.identifier
+            ),
+          },
+        });
+      } catch (e) {
+        res.status(400).json(TaskNotUpdated);
+        return;
+      }
     }
   }
   if (tasksInNewColumn.length === 0) {
-    const taskUpdated = await prisma.task.update({
-      where: {
-        identifier: taskId,
-      },
-      data: {
-        ...task,
-        orderInColumn: 0,
-        boardColumn: newTaskColumn,
-      },
-    });
+    let taskUpdated = null;
+    try {
+      taskUpdated = await prisma.task.update({
+        where: {
+          identifier: taskId,
+        },
+        data: {
+          ...task,
+          orderInColumn: 0,
+          boardColumn: newTaskColumn,
+        },
+      });
+    } catch (e) {
+      res.status(400).json(TaskNotUpdated);
+      return;
+    }
     res.json(taskUpdated);
     return;
   } else {
@@ -517,19 +546,25 @@ router.put("/:taskId/columns", async (req, res) => {
     tasksInNewColumn.splice(positionInColumn, 0, task);
 
     for (const item of tasksInNewColumn) {
-      const updatedTask = await prisma.task.update({
-        where: {
-          identifier: item.identifier,
-        },
-        data: {
-          ...item,
-          orderInColumn: tasksInNewColumn.findIndex(
-            (elem) => elem.identifier === item.identifier
-          ),
-          boardColumn:
-            item.identifier === taskId ? newTaskColumn : item.boardColumn,
-        },
-      });
+      let updatedTask = null;
+      try {
+        updatedTask = await prisma.task.update({
+          where: {
+            identifier: item.identifier,
+          },
+          data: {
+            ...item,
+            orderInColumn: tasksInNewColumn.findIndex(
+              (elem) => elem.identifier === item.identifier
+            ),
+            boardColumn:
+              item.identifier === taskId ? newTaskColumn : item.boardColumn,
+          },
+        });
+      } catch (e) {
+        res.status(400).json(TaskNotUpdated);
+        return;
+      }
       if (item.identifier === task.identifier) {
         taskUpdated = updatedTask;
       }

@@ -22,10 +22,17 @@ const UserUpdateError = {
   reasonCode: "USER_UPDATE_ERROR",
   message: "Edycja użytkownika nie powiodła się",
 };
+
+const UserNotCreated = {
+  reasonCode: "USER_NOT_CREATED",
+  message: "Utworzenie użytkownika nie powiodło się",
+};
+
 module.exports = {
   UserNotFound,
   NoRequiredData,
   UserExists,
   UserForbiddenAction,
   UserUpdateError,
+  UserNotCreated,
 };
