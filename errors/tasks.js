@@ -28,6 +28,16 @@ const TaskForbiddenAction = {
   message: "Brak uprawnień do wykonania tej akcji",
 };
 
+const TaskNotCreated = {
+  reasonCode: "CANNOT_CREATE_TASK",
+  message: "Utworzenie zadania nie powiodło się",
+};
+
+const TaskNotUpdated = {
+  reasonCode: "CANNOT_UPDATE_TASK",
+  message: "Edycja zadania nie powiodla się",
+};
+
 module.exports = {
   CannotAssignUser,
   TaskNotFound,
@@ -35,4 +45,6 @@ module.exports = {
   TaskDeleted,
   TaskUpdateError,
   TaskForbiddenAction,
+  TaskNotCreated,
+  TaskNotUpdated,
 };

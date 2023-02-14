@@ -13,8 +13,9 @@ const {
   BoardDeleted,
   BoardNotDeleted,
   BoardActionForbidden,
+  BoardAlreadyExists,
 } = require("../errors/boards");
-const { CannotAssignUser } = require("../errors/tasks");
+const { CannotAssignUser, TaskNotCreated } = require("../errors/tasks");
 const { getNextOrderInColumn, getNextTaskNumber } = require("../utils");
 
 const errorIfNotContributorOrOwner = async (res, userId, boardId) => {
@@ -276,17 +277,33 @@ router.post("/", async (req, res) => {
     res.status(400).json(NoRequiredData);
     return;
   }
-  const board = await prisma.board.create({
-    data: {
-      name,
-      shortcut,
-      owner: {
-        connect: {
-          identifier: req.user.identifier,
-        },
-      },
+  const boardByShortcut = await prisma.board.findUnique({
+    where: {
+      shortcut: shortcut,
     },
   });
+
+  if (boardByShortcut) {
+    res.status(400).json(BoardAlreadyExists);
+    return;
+  }
+  let board = null;
+  try {
+    board = await prisma.board.create({
+      data: {
+        name,
+        shortcut,
+        owner: {
+          connect: {
+            identifier: req.user.identifier,
+          },
+        },
+      },
+    });
+  } catch (e) {
+    res.status(400).json(BoardNotCreated);
+    return;
+  }
   if (!board) {
     res.status(400).json(BoardNotCreated);
     return;
@@ -489,28 +506,33 @@ router.post("/:boardId/tasks", async (req, res) => {
 
   const orderInColumn = await getNextOrderInColumn(boardId);
   const taskNumber = await getNextTaskNumber(boardId);
-
-  let task = await prisma.task.create({
-    data: {
-      title,
-      description,
-      boardColumn,
-      taskPriority,
-      creationDate: new Date(),
-      taskNumber: taskNumber,
-      reporter: {
-        connect: {
-          identifier: req.user.identifier,
+  let task = null;
+  try {
+    task = await prisma.task.create({
+      data: {
+        title,
+        description,
+        boardColumn,
+        taskPriority,
+        creationDate: new Date(),
+        taskNumber: taskNumber,
+        reporter: {
+          connect: {
+            identifier: req.user.identifier,
+          },
+        },
+        orderInColumn: orderInColumn,
+        board: {
+          connect: {
+            identifier: boardId,
+          },
         },
       },
-      orderInColumn: orderInColumn,
-      board: {
-        connect: {
-          identifier: boardId,
-        },
-      },
-    },
-  });
+    });
+  } catch (e) {
+    res.status(400).json(TaskNotCreated);
+    return;
+  }
   if (assignedUserIdentifier) {
     try {
       task = await prisma.task.update({

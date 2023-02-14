@@ -7,6 +7,7 @@ const {
   NoRequiredData,
   UserForbiddenAction,
   UserUpdateError,
+  UserNotCreated,
 } = require("../errors/users");
 
 const prisma = new PrismaClient();
@@ -65,14 +66,20 @@ router.post("/", async (req, res) => {
   }
 
   const encryptedPswd = bcrypt.hashSync(password, 10);
-  const user = await prisma.user.create({
-    data: {
-      firstname,
-      surname,
-      email,
-      password: encryptedPswd,
-    },
-  });
+  let user = null;
+  try {
+    user = await prisma.user.create({
+      data: {
+        firstname,
+        surname,
+        email,
+        password: encryptedPswd,
+      },
+    });
+  } catch (e) {
+    res.status(400).json(UserNotCreated);
+    return;
+  }
   res.status(200).json({ identifier: user.identifier });
 });
 

@@ -43,6 +43,11 @@ const BoardActionForbidden = {
   message: "Nie masz uprawnień do wykonania tej akcji.",
 };
 
+const BoardAlreadyExists = {
+  reasonCode: "BOARD_ALREADY_EXISTS",
+  message: "Tablica o podanym skrócie już istnieje",
+};
+
 module.exports = {
   BoardNotCreated,
   BoardNotFound,
@@ -53,4 +58,5 @@ module.exports = {
   BoardDeleted,
   BoardNotDeleted,
   BoardActionForbidden,
+  BoardAlreadyExists,
 };
