@@ -33,7 +33,7 @@ model User {
   ownedBoards       Board[]   @relation("OwnedBoards")
   createdTasks      Task[]    @relation("CreatedTasks")
   tasks             Task[]    @relation("AssignedTasks")
-  contributedBoards Board[]
+  contributedBoards Board[]   @relation("ContributedBoards")
   createdComments   Comment[]
   isArchived        Boolean   @default(false) @db.Boolean
 }
@@ -44,7 +44,7 @@ model Board {
   name         String  @db.VarChar(30)
   ownerId      String  @db.Uuid
   owner        User    @relation("OwnedBoards", fields: [ownerId], references: [identifier], onDelete: Cascade)
-  contributors User[]
+  contributors User[]   @relation("ContributedBoards")
   tasks        Task[]
   isArchived   Boolean @default(false) @db.Boolean
 }

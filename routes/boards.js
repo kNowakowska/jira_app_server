@@ -23,18 +23,29 @@ const errorIfNotContributorOrOwner = async (res, userId, boardId) => {
     where: {
       identifier: boardId,
     },
+    include: {
+      contributors: true,
+    },
   });
+
   if (!board) {
     res.status(400).json(BoardNotFound);
     return;
   }
+
+  if (board.isArchived) {
+    res.status(400).json(BoardDeleted);
+    return;
+  }
+
   if (
     userId !== board.ownerId &&
-    !board.contributors.map((board) => board.identifier).includes(userId)
+    !board.contributors.map((user) => user.identifier).includes(userId)
   ) {
     res.status(403).json(BoardActionForbidden);
     return;
   }
+  return;
 };
 
 const errorIfNotOwner = async (userId, boardId) => {
@@ -258,16 +269,19 @@ router.get("/:id", async (req, res) => {
       tasks: true,
     },
   });
-  await errorIfNotContributorOrOwner(res, req.user.identifier, id);
 
   if (!board) {
     res.status(404).json(BoardNotFound);
     return;
   }
+
   if (board.isArchived) {
     res.status(400).json(BoardDeleted);
     return;
   }
+  
+  await errorIfNotContributorOrOwner(res, req.user.identifier, id);
+
   res.json(board);
 });
 

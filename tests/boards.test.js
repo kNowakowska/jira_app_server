@@ -11,10 +11,23 @@ const user = {
   password: "test",
 };
 
+const user2 = {
+  firstname: "Rachel",
+  surname: "Green",
+  email: "rech@xx.pl",
+  password: "test",
+};
+
+const board = { name: "Board 1", shortcut: "b01" };
+const board2 = { name: "Board 2", shortcut: "b02" };
+
 let userId = "";
+let userId2 = "";
 let boardId = "";
+let boardId2 = "";
 
 let jwtToken = "";
+let jwtToken2 = "";
 
 beforeAll(async () => {
   const response = await request(process.env.TEST_BASE_URL)
@@ -28,30 +41,63 @@ beforeAll(async () => {
     .send({ email: user.email, password: user.password });
 
   jwtToken = loginResponse.body.accessToken;
+
+  const response2 = await request(process.env.TEST_BASE_URL)
+    .post("users")
+    .send(user2);
+
+  userId2 = response2.body.identifier;
+
+  const loginResponse2 = await request(process.env.TEST_BASE_URL)
+    .post("auth/login")
+    .send({ email: user2.email, password: user2.password });
+
+  jwtToken2 = loginResponse2.body.accessToken;
+
+  const response3 = await request(process.env.TEST_BASE_URL)
+    .post(endpoint)
+    .send(board2)
+    .set("Authorization", `Bearer ${jwtToken2}`);
+  boardId2 = response3.body.identifier;
+
+  const response4 = await request(process.env.TEST_BASE_URL)
+    .put(`${endpoint}/${boardId2}/users/${userId}`)
+    .set("Authorization", `Bearer ${jwtToken2}`);
 });
 
 afterAll(async () => {
+  await prisma.board.delete({
+    where: { identifier: boardId },
+  });
+  await prisma.board.delete({
+    where: { identifier: boardId2 },
+  });
   await prisma.user.delete({
     where: { identifier: userId },
+  });
+  await prisma.user.delete({
+    where: { identifier: userId2 },
   });
 });
 
 describe("create a new board", () => {
   it("no required data given", async () => {
-    const board = { name: "Board 1" };
+    const noDataBoard = { name: "Board 1" };
     const response = await request(process.env.TEST_BASE_URL)
       .post(endpoint)
-      .send(board)
+      .send(noDataBoard)
       .set("Authorization", `Bearer ${jwtToken}`);
+
     expect(response.statusCode).toBe(400);
     expect(response.body.reasonCode).toBe("NO_REQUIRED_DATA");
   });
+
   it("create board successfully", async () => {
-    const board = { name: "Board 1", shortcut: "b01" };
     const response = await request(process.env.TEST_BASE_URL)
       .post(endpoint)
       .send(board)
       .set("Authorization", `Bearer ${jwtToken}`);
+
     expect(response.statusCode).toBe(201);
     expect(response.body.identifier).toBeDefined();
     boardId = response.body.identifier;
@@ -59,16 +105,89 @@ describe("create a new board", () => {
 });
 
 describe("get boards", () => {
-  it.todo("get all boards successfully");
-  it.todo("get contributed boards");
-  it.todo("get owned boards");
+  it("get all boards successfully", async () => {
+    const response = await request(process.env.TEST_BASE_URL)
+      .get(endpoint)
+      .set("Authorization", `Bearer ${jwtToken}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ...board, identifier: boardId }),
+        expect.objectContaining({ ...board2, identifier: boardId2 }),
+      ])
+    );
+  });
+
+  it("get contributed boards", async () => {
+    const response = await request(process.env.TEST_BASE_URL)
+      .get(`${endpoint}/contributed`)
+      .set("Authorization", `Bearer ${jwtToken}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ...board2, identifier: boardId2 }),
+      ])
+    );
+  });
+
+  it("get owned boards", async () => {
+    const response = await request(process.env.TEST_BASE_URL)
+      .get(`${endpoint}/owned`)
+      .set("Authorization", `Bearer ${jwtToken}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ...board, identifier: boardId }),
+      ])
+    );
+  });
 });
 
 describe("get board by identifier", () => {
-  it.todo("get board successfully if user is the owner");
-  it.todo("cannot get board if user is not the owner or contributor");
-  it.todo("get board successfully if user is the contributor");
-  it.todo("board doesn't exist");
+  it("get board successfully if user is the owner", async () => {
+    const response = await request(process.env.TEST_BASE_URL)
+      .get(`${endpoint}/${boardId}`)
+      .set("Authorization", `Bearer ${jwtToken}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual(
+      expect.objectContaining({ ...board, identifier: boardId })
+    );
+  });
+
+  it("get board successfully if user is the contributor", async () => {
+    const response = await request(process.env.TEST_BASE_URL)
+      .get(`${endpoint}/${boardId2}`)
+      .set("Authorization", `Bearer ${jwtToken}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual(
+      expect.objectContaining({ ...board2, identifier: boardId2 })
+    );
+  });
+
+  it("board doesn't exist", async () => {
+    const noBoardId = boardId.replace("1", "a");
+    const response = await request(process.env.TEST_BASE_URL)
+      .get(`${endpoint}/${noBoardId}`)
+      .set("Authorization", `Bearer ${jwtToken}`);
+
+    expect(response.statusCode).toBe(404);
+    expect(response.body.reasonCode).toBe("BOARD_NOT_FOUND");
+  });
+
+  it("cannot get board if user is not the owner or contributor", async () => {
+    const response = await request(process.env.TEST_BASE_URL)
+      .get(`${endpoint}/${boardId}`)
+      .set("Authorization", `Bearer ${jwtToken2}`);
+
+    expect(response.statusCode).toBe(403);
+    expect(response.body.reasonCode).toBe("BOARD_ACTION_FORBIDDEN");
+  });
+
   it.todo("board is already deleted");
 });
 
