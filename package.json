@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start":"dotenv -e .env.development node ./bin/www" ,
+    "start":"node ./bin/www" ,
     "watch": "nodemon",
     "docker:up": "docker-compose -f docker-compose-test.yml up -d",
     "docker:down": "docker-compose down",
