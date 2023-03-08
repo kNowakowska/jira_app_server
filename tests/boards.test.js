@@ -1,6 +1,7 @@
 const request = require("supertest");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const { v4 } = require("uuid");
 
 const endpoint = "boards";
 
@@ -170,7 +171,7 @@ describe("get board by identifier", () => {
   });
 
   it("board doesn't exist", async () => {
-    const noBoardId = boardId.replace("1", "a");
+    const noBoardId = v4();
     const response = await request(process.env.TEST_BASE_URL)
       .get(`${endpoint}/${noBoardId}`)
       .set("Authorization", `Bearer ${jwtToken}`);
@@ -187,12 +188,19 @@ describe("get board by identifier", () => {
     expect(response.statusCode).toBe(403);
     expect(response.body.reasonCode).toBe("BOARD_ACTION_FORBIDDEN");
   });
-
-  it.todo("board is already deleted");
 });
 
 describe("update a board", () => {
-  it.todo("no required data given");
+  it("no required data given", async () => {
+    const noDataBoard = { noProp: "Board 1" };
+    const response = await request(process.env.TEST_BASE_URL)
+      .put(`${endpoint}/${boardId}`)
+      .send(noDataBoard)
+      .set("Authorization", `Bearer ${jwtToken}`);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.reasonCode).toBe("NO_REQUIRED_DATA");
+  });
   it.todo("user isn't the owner of the board");
   it.todo("update board successfully");
   it.todo("board is already deleted");

@@ -18,7 +18,7 @@ const {
 const { CannotAssignUser, TaskNotCreated } = require("../errors/tasks");
 const { getNextOrderInColumn, getNextTaskNumber } = require("../utils");
 
-const errorIfNotContributorOrOwner = async (res, userId, boardId) => {
+const errorIfNotContributorOrOwner = async (userId, boardId) => {
   const board = await prisma.board.findUnique({
     where: {
       identifier: boardId,
@@ -29,23 +29,20 @@ const errorIfNotContributorOrOwner = async (res, userId, boardId) => {
   });
 
   if (!board) {
-    res.status(400).json(BoardNotFound);
-    return;
+    return [true, BoardNotFound, 400];
   }
 
   if (board.isArchived) {
-    res.status(400).json(BoardDeleted);
-    return;
+    return [true, BoardDeleted, 400];
   }
 
   if (
     userId !== board.ownerId &&
     !board.contributors.map((user) => user.identifier).includes(userId)
   ) {
-    res.status(403).json(BoardActionForbidden);
-    return;
+    return [true, BoardActionForbidden, 403];
   }
-  return;
+  return [false, null, 200];
 };
 
 const errorIfNotOwner = async (userId, boardId) => {
@@ -55,9 +52,9 @@ const errorIfNotOwner = async (userId, boardId) => {
     },
   });
   if (userId !== boardToUpdate.ownerId) {
-    res.status(403).json(BoardActionForbidden);
-    return;
+    return [true, BoardActionForbidden, 403];
   }
+  return [false, null, 200];
 };
 
 router.get("/", async (req, res) => {
@@ -273,16 +270,20 @@ router.get("/:id", async (req, res) => {
   if (!board) {
     res.status(404).json(BoardNotFound);
     return;
-  }
-
-  if (board.isArchived) {
+  } else if (board.isArchived) {
     res.status(400).json(BoardDeleted);
     return;
+  } else {
+    const [isError, errorObj, statusCode] = await errorIfNotContributorOrOwner(
+      req.user.identifier,
+      id
+    );
+    if (isError) {
+      res.status(statusCode).json(errorObj);
+    } else {
+      res.json(board);
+    }
   }
-  
-  await errorIfNotContributorOrOwner(res, req.user.identifier, id);
-
-  res.json(board);
 });
 
 router.post("/", async (req, res) => {
@@ -331,26 +332,34 @@ router.put("/:id", async (req, res) => {
   if (!name) {
     res.status(400).json(NoRequiredData);
     return;
+  } else {
+    const [isError, errorObj, statusCode] = await errorIfNotOwner(
+      req.user.identifier,
+      id
+    );
+    if (isError) {
+      res.status(statusCode).json(errorObj);
+      return;
+    }
+    let board = null;
+    try {
+      board = await prisma.board.update({
+        where: { identifier: id },
+        data: {
+          name,
+        },
+      });
+    } catch (e) {
+      res.status(400).json(BoardNotUpdated);
+      return;
+    }
+    if (board.isArchived) {
+      res.status(400).json(BoardDeleted);
+      return;
+    } else {
+      res.status(200).json(board);
+    }
   }
-
-  await errorIfNotOwner(req.user.identifier, id);
-  let board = null;
-  try {
-    board = await prisma.board.update({
-      where: { identifier: id },
-      data: {
-        name,
-      },
-    });
-  } catch (e) {
-    res.status(400).json(BoardNotUpdated);
-    return;
-  }
-  if (board.isArchived) {
-    res.status(400).json(BoardDeleted);
-    return;
-  }
-  res.status(200).json(board);
 });
 
 router.delete("/:id", async (req, res) => {
@@ -368,7 +377,14 @@ router.delete("/:id", async (req, res) => {
     res.status(400).json(BoardDeleted);
     return;
   }
-  await errorIfNotOwner(req.user.identifier, id);
+  const [isError, errorObj, statusCode] = await errorIfNotOwner(
+    req.user.identifier,
+    id
+  );
+  if (isError) {
+    res.status(statusCode).json(errorObj);
+    return;
+  }
 
   let board = null;
   try {
@@ -394,7 +410,14 @@ router.put("/:id/users/:userId", async (req, res) => {
     res.status(400).json(NoRequiredData);
     return;
   }
-  await errorIfNotOwner(req.user.identifier, id);
+  const [isError, errorObj, statusCode] = await errorIfNotOwner(
+    req.user.identifier,
+    id
+  );
+  if (isError) {
+    res.status(statusCode).json(errorObj);
+    return;
+  }
 
   let board = null;
   try {
@@ -423,7 +446,14 @@ router.delete("/:id/users/:userId", async (req, res) => {
     return;
   }
 
-  await errorIfNotOwner(req.user.identifier, id);
+  const [isError, errorObj, statusCode] = await errorIfNotOwner(
+    req.user.identifier,
+    id
+  );
+  if (isError) {
+    res.status(statusCode).json(errorObj);
+    return;
+  }
 
   let board = null;
   try {
@@ -453,7 +483,14 @@ router.get("/:boardId/tasks", async (req, res) => {
     return;
   }
 
-  await errorIfNotContributorOrOwner(res, req.user.identifier, boardId);
+  const [isError, errorObj, statusCode] = await errorIfNotContributorOrOwner(
+    req.user.identifier,
+    id
+  );
+  if (isError) {
+    res.status(statusCode).json(errorObj);
+    return;
+  }
 
   const filters = {
     isArchived: false,
@@ -511,7 +548,14 @@ router.post("/:boardId/tasks", async (req, res) => {
     res.status(400).json(BoardNotFound);
     return;
   }
-  await errorIfNotContributorOrOwner(res, req.user.identifier, boardId);
+  const [isError, errorObj, statusCode] = await errorIfNotContributorOrOwner(
+    req.user.identifier,
+    id
+  );
+  if (isError) {
+    res.status(statusCode).json(errorObj);
+    return;
+  }
 
   if (!title || !description || !boardColumn || !taskPriority) {
     res.status(400).json(NoRequiredData);
