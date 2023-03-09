@@ -51,6 +51,11 @@ const errorIfNotOwner = async (userId, boardId) => {
       identifier: boardId,
     },
   });
+  if (!boardToUpdate) {
+    return [true, BoardNotFound, 404];
+  } else if (boardToUpdate.isArchived) {
+    return [true, BoardDeleted, 400];
+  }
   if (userId !== boardToUpdate.ownerId) {
     return [true, BoardActionForbidden, 403];
   }
@@ -353,12 +358,7 @@ router.put("/:id", async (req, res) => {
       res.status(400).json(BoardNotUpdated);
       return;
     }
-    if (board.isArchived) {
-      res.status(400).json(BoardDeleted);
-      return;
-    } else {
-      res.status(200).json(board);
-    }
+    res.status(200).json(board);
   }
 });
 
@@ -369,14 +369,6 @@ router.delete("/:id", async (req, res) => {
     where: { identifier: id },
   });
 
-  if (!boardToDelete) {
-    res.status(400).json(BoardNotFound);
-    return;
-  }
-  if (boardToDelete.isArchived) {
-    res.status(400).json(BoardDeleted);
-    return;
-  }
   const [isError, errorObj, statusCode] = await errorIfNotOwner(
     req.user.identifier,
     id
@@ -405,7 +397,6 @@ router.delete("/:id", async (req, res) => {
 
 router.put("/:id/users/:userId", async (req, res) => {
   const { id, userId } = req.params;
-
   if (!id || !userId) {
     res.status(400).json(NoRequiredData);
     return;
@@ -478,15 +469,11 @@ router.get("/:boardId/tasks", async (req, res) => {
   const { boardId } = req.params;
   const { search, assignedUserIdentifier } = req.query;
 
-  if (!boardId) {
-    res.status(400).json(BoardNotFound);
-    return;
-  }
-
   const [isError, errorObj, statusCode] = await errorIfNotContributorOrOwner(
     req.user.identifier,
-    id
+    boardId
   );
+
   if (isError) {
     res.status(statusCode).json(errorObj);
     return;
@@ -544,21 +531,18 @@ router.post("/:boardId/tasks", async (req, res) => {
     taskPriority,
   } = req.body;
 
-  if (!boardId) {
-    res.status(400).json(BoardNotFound);
-    return;
-  }
-  const [isError, errorObj, statusCode] = await errorIfNotContributorOrOwner(
-    req.user.identifier,
-    id
-  );
-  if (isError) {
-    res.status(statusCode).json(errorObj);
+  if (!title || !description || !boardColumn || !taskPriority) {
+    res.status(400).json(NoRequiredData);
     return;
   }
 
-  if (!title || !description || !boardColumn || !taskPriority) {
-    res.status(400).json(NoRequiredData);
+  const [isError, errorObj, statusCode] = await errorIfNotContributorOrOwner(
+    req.user.identifier,
+    boardId
+  );
+
+  if (isError) {
+    res.status(statusCode).json(errorObj);
     return;
   }
 
