@@ -16,11 +16,12 @@ const {
   TaskForbiddenAction,
   TaskNotUpdated,
 } = require("../errors/tasks");
+const { BOARD_COLUMNS } = require("../types");
 
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
-  const task = await prisma.task.findFirst({
-    where: { identifier: id, isArchived: false },
+  const task = await prisma.task.findUnique({
+    where: { identifier: id },
     include: {
       assignedUser: {
         select: {
@@ -58,16 +59,24 @@ router.get("/:id", async (req, res) => {
       },
     },
   });
-  if (task) res.json(task);
-  else {
+  if (!task) {
     res.status(400).json(TaskNotFound);
     return;
   }
+  if (task.isArchived) {
+    res.status(404).json(TaskDeleted);
+    return;
+  }
+  res.json(task);
 });
 
 router.patch("/:id", async (req, res) => {
   const { id } = req.params;
   const { title, description, taskPriority, assignedUserIdentifier } = req.body;
+  if (!title && !description && !taskPriority && !assignedUserIdentifier) {
+    res.status(400).json(NoRequiredData);
+    return;
+  }
 
   const updateTask = await prisma.task.findUnique({
     where: {
@@ -81,7 +90,7 @@ router.patch("/:id", async (req, res) => {
   }
 
   if (updateTask.isArchived) {
-    res.status(400).json(TaskDeleted);
+    res.status(404).json(TaskDeleted);
     return;
   }
 
@@ -146,11 +155,7 @@ router.patch("/:id", async (req, res) => {
     return;
   }
 
-  if (task) res.json(task);
-  else {
-    res.status(400).json(TaskNotFound);
-    return;
-  }
+  res.json(task);
 });
 
 router.put("/:id/log-time", async (req, res) => {
@@ -168,12 +173,19 @@ router.put("/:id/log-time", async (req, res) => {
     },
   });
 
+  if (!taskToUpdate) {
+    res.status(400).json(TaskNotFound);
+    return;
+  }
+
   if (req.user.identifier !== taskToUpdate.assignedUserId) {
     res.status(403).json(TaskForbiddenAction);
     return;
   }
+
+  let task = null;
   try {
-    const task = await prisma.task.update({
+    task = await prisma.task.update({
       where: { identifier: id },
       data: {
         loggedTime: loggedTime,
@@ -199,7 +211,7 @@ router.put("/:id/log-time", async (req, res) => {
           select: {
             identifier: true,
             content: true,
-            creationDate: true,
+            createdDate: true,
             creator: {
               select: {
                 identifier: true,
@@ -219,11 +231,7 @@ router.put("/:id/log-time", async (req, res) => {
     res.status(400).json(TaskUpdateError);
     return;
   }
-  if (task) res.json(task);
-  else {
-    res.status(400).json(TaskNotFound);
-    return;
-  }
+  res.json(task);
 });
 
 router.delete("/:id/assigned-user", async (req, res) => {
@@ -258,7 +266,7 @@ router.delete("/:id/assigned-user", async (req, res) => {
           select: {
             identifier: true,
             content: true,
-            creationDate: true,
+            createdDate: true,
             creator: {
               select: {
                 identifier: true,
@@ -275,15 +283,11 @@ router.delete("/:id/assigned-user", async (req, res) => {
       },
     });
   } catch (e) {
-    res.status(400).json(TaskUpdateError);
-    return;
-  }
-
-  if (task) res.json(task);
-  else {
     res.status(400).json(TaskNotFound);
     return;
   }
+
+  res.json(task);
 });
 
 router.delete("/:id", async (req, res) => {
@@ -316,7 +320,7 @@ router.delete("/:id", async (req, res) => {
           select: {
             identifier: true,
             content: true,
-            creationDate: true,
+            createdDate: true,
             creator: {
               select: {
                 identifier: true,
@@ -333,15 +337,11 @@ router.delete("/:id", async (req, res) => {
       },
     });
   } catch (e) {
-    res.status(400).json(TaskUpdateError);
-    return;
-  }
-
-  if (task) res.json(task);
-  else {
     res.status(400).json(TaskNotFound);
     return;
   }
+
+  res.json(task);
 });
 
 router.post("/:taskId/comments", async (req, res) => {
@@ -349,7 +349,20 @@ router.post("/:taskId/comments", async (req, res) => {
   const { content } = req.body;
   if (!content) {
     res.status(400).json(NoRequiredCommentData);
+    return;
   }
+
+  const taskToUpdate = await prisma.task.findUnique({
+    where: {
+      identifier: taskId,
+    },
+  });
+
+  if (!taskToUpdate) {
+    res.status(400).json(TaskNotFound);
+    return;
+  }
+
   let comment = null;
   try {
     comment = await prisma.comment.create({
@@ -382,10 +395,6 @@ router.post("/:taskId/comments", async (req, res) => {
       },
     });
   } catch (e) {
-    res.status(404).json(CommentNotCreated);
-    return;
-  }
-  if (!comment) {
     res.status(404).json(CommentNotCreated);
     return;
   }
@@ -472,7 +481,11 @@ router.put("/:taskId/order", async (req, res) => {
 router.put("/:taskId/columns", async (req, res) => {
   const { taskId } = req.params;
   const { positionInColumn, newTaskColumn } = req.body;
-  if (positionInColumn === undefined || !newTaskColumn) {
+  if (
+    positionInColumn === undefined ||
+    !newTaskColumn ||
+    !BOARD_COLUMNS.includes(newTaskColumn)
+  ) {
     res.status(400).json(NoRequiredData);
     return;
   }
