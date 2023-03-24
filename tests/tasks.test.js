@@ -618,7 +618,7 @@ describe("post a comment to the task", () => {
     expect(response.body.reasonCode).toBe("TASK_NOT_FOUND");
   });
   it("comment created successfully", async () => {
-    const data = { content: "Komentarz 1" };
+    const data = { content: "Comment 1" };
     const response = await request(process.env.TEST_BASE_URL)
       .post(`${endpoint}/${taskId}/comments`)
       .send(data)
@@ -626,7 +626,7 @@ describe("post a comment to the task", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toEqual(
-      expect.objectContaining({ content: "Komentarz 1" })
+      expect.objectContaining({ content: "Comment 1" })
     );
   });
 });

@@ -8,6 +8,7 @@ const {
   CommentNotFound,
   CommentNotEdited,
   CommentDeleted,
+  ForbiddenAction,
 } = require("../errors/comments");
 
 router.patch("/:id", async (req, res) => {
@@ -58,11 +59,7 @@ router.patch("/:id", async (req, res) => {
       },
     });
   } catch (e) {
-    res.status(400).json(CommentNotEdited);
-    return;
-  }
-  if (!comment) {
-    res.status(400).json(CommentNotEdited);
+    res.status(400).json(CommentNotFound);
     return;
   }
   res.json(comment);
