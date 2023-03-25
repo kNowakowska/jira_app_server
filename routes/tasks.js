@@ -63,7 +63,7 @@ router.get("/:id", async (req, res) => {
     res.status(400).json(TaskNotFound);
     return;
   }
-  if (task.isArchived) {
+  if (task.isDeleted) {
     res.status(404).json(TaskDeleted);
     return;
   }
@@ -89,7 +89,7 @@ router.patch("/:id", async (req, res) => {
     return;
   }
 
-  if (updateTask.isArchived) {
+  if (updateTask.isDeleted) {
     res.status(404).json(TaskDeleted);
     return;
   }
@@ -297,7 +297,7 @@ router.delete("/:id", async (req, res) => {
     task = await prisma.task.update({
       where: { identifier: id },
       data: {
-        isArchived: true,
+        isDeleted: true,
       },
       include: {
         assignedUser: {
@@ -587,4 +587,51 @@ router.put("/:taskId/columns", async (req, res) => {
   }
 });
 
+router.put("/:taskId/archive", async (req, res) => {
+  const { taskId } = req.params;
+  const taskToArchive = await prisma.task.findUnique({
+    where: { identifier: taskId },
+  });
+  if (!taskToArchive) {
+    res.status(400).json(TaskNotFound);
+    return;
+  }
+  if (taskToArchive.isDeleted) {
+    res.status(400).json(TaskDeleted);
+    return;
+  }
+
+  let task = null;
+  try {
+    task = await prisma.task.update({
+      where: { identifier: taskId },
+      data: {
+        isArchived: true,
+      },
+      include: {
+        assignedUser: {
+          select: {
+            identifier: true,
+            email: true,
+            firstname: true,
+            surname: true,
+          },
+        },
+        reporter: {
+          select: {
+            identifier: true,
+            email: true,
+            firstname: true,
+            surname: true,
+          },
+        },
+      },
+    });
+  } catch (e) {
+    res.status(400).json(TaskNotFound);
+    return;
+  }
+
+  res.json(task);
+});
 module.exports = router;
