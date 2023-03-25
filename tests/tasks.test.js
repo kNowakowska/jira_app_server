@@ -547,7 +547,7 @@ describe("delete task", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toEqual(
-      expect.objectContaining({ ...task, isArchived: true })
+      expect.objectContaining({ ...task, isDeleted: true })
     );
   });
 });
@@ -1037,6 +1037,119 @@ describe("change column and order of the task", () => {
         orderInColumn: 1,
         boardColumn: "READY_FOR_TESTING",
       })
+    );
+  });
+});
+
+describe("archive task", () => {
+  const task = {
+    title: "Task 1",
+    description: "Task 1 description",
+    boardColumn: "TO_DO",
+    taskPriority: "MEDIUM",
+  };
+  let taskId = null;
+  const task2 = {
+    title: "Task 2",
+    description: "Task 2 description",
+    boardColumn: "TO_DO",
+    taskPriority: "MEDIUM",
+  };
+  let taskId2 = null;
+
+  beforeAll(async () => {
+    const newTask = await prisma.task.create({
+      data: {
+        title: task.title,
+        description: task.description,
+        boardColumn: task.boardColumn,
+        taskPriority: task.taskPriority,
+        creationDate: new Date(),
+        taskNumber: "t-01",
+        reporter: {
+          connect: {
+            identifier: userId,
+          },
+        },
+        orderInColumn: 0,
+        board: {
+          connect: {
+            identifier: boardId,
+          },
+        },
+        assignedUser: {
+          connect: {
+            identifier: userId,
+          },
+        },
+      },
+    });
+    taskId = newTask.identifier;
+    const newTask2 = await prisma.task.create({
+      data: {
+        title: task2.title,
+        description: task2.description,
+        boardColumn: task2.boardColumn,
+        taskPriority: task2.taskPriority,
+        creationDate: new Date(),
+        taskNumber: "t-02",
+        isDeleted: true,
+        reporter: {
+          connect: {
+            identifier: userId,
+          },
+        },
+        orderInColumn: 0,
+        board: {
+          connect: {
+            identifier: boardId,
+          },
+        },
+        assignedUser: {
+          connect: {
+            identifier: userId,
+          },
+        },
+      },
+    });
+    taskId2 = newTask2.identifier;
+  });
+
+  afterAll(async () => {
+    await prisma.task.delete({
+      where: { identifier: taskId },
+    });
+    await prisma.task.delete({
+      where: { identifier: taskId2 },
+    });
+  });
+
+  it("task not found", async () => {
+    const noTaskId = v4();
+    const response = await request(process.env.TEST_BASE_URL)
+      .put(`${endpoint}/${noTaskId}/archive`)
+      .set("Authorization", `Bearer ${jwtToken}`);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.reasonCode).toBe("TASK_NOT_FOUND");
+  });
+
+  it("task already deleted", async () => {
+    const response = await request(process.env.TEST_BASE_URL)
+      .put(`${endpoint}/${taskId2}/archive`)
+      .set("Authorization", `Bearer ${jwtToken}`);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.reasonCode).toBe("TASK_DELETED");
+  });
+  it("task archived successfully", async () => {
+    const response = await request(process.env.TEST_BASE_URL)
+      .put(`${endpoint}/${taskId}/archive`)
+      .set("Authorization", `Bearer ${jwtToken}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual(
+      expect.objectContaining({ ...task, isArchived: true })
     );
   });
 });
