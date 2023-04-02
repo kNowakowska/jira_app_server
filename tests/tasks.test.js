@@ -384,7 +384,7 @@ describe("log time of task", () => {
     const response = await request(process.env.TEST_BASE_URL)
       .put(`${endpoint}/${taskId}/log-time`)
       .set("Authorization", `Bearer ${jwtToken}`);
-
+    
     expect(response.statusCode).toBe(400);
     expect(response.body.reasonCode).toBe("NO_REQUIRED_DATA");
   });

@@ -160,12 +160,13 @@ router.patch("/:id", async (req, res) => {
 
 router.put("/:id/log-time", async (req, res) => {
   const { id } = req.params;
-  const { loggedTime } = req.body;
 
-  if (!loggedTime) {
+  if (!("loggedTime" in req.body)) {
     res.status(400).json(NoRequiredData);
     return;
   }
+
+  const { loggedTime } = req.body;
 
   const taskToUpdate = await prisma.task.findUnique({
     where: {
