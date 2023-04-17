@@ -529,6 +529,7 @@ router.post("/:boardId/tasks", async (req, res) => {
     assignedUserIdentifier,
     boardColumn,
     taskPriority,
+    loggedTime,
   } = req.body;
 
   if (!title || !description || !boardColumn || !taskPriority) {
@@ -549,27 +550,34 @@ router.post("/:boardId/tasks", async (req, res) => {
   const orderInColumn = await getNextOrderInColumn(boardId);
   const taskNumber = await getNextTaskNumber(boardId);
   let task = null;
+
+  const data = {
+    title,
+    description,
+    boardColumn,
+    taskPriority,
+    creationDate: new Date(),
+    taskNumber: taskNumber,
+    reporter: {
+      connect: {
+        identifier: req.user.identifier,
+      },
+    },
+    orderInColumn: orderInColumn,
+    board: {
+      connect: {
+        identifier: boardId,
+      },
+    },
+  };
+
+  if (loggedTime) {
+    data["loggedTime"] = +loggedTime;
+  }
+  
   try {
     task = await prisma.task.create({
-      data: {
-        title,
-        description,
-        boardColumn,
-        taskPriority,
-        creationDate: new Date(),
-        taskNumber: taskNumber,
-        reporter: {
-          connect: {
-            identifier: req.user.identifier,
-          },
-        },
-        orderInColumn: orderInColumn,
-        board: {
-          connect: {
-            identifier: boardId,
-          },
-        },
-      },
+      data: data,
     });
   } catch (e) {
     res.status(400).json(TaskNotCreated);
@@ -594,6 +602,7 @@ router.post("/:boardId/tasks", async (req, res) => {
       return;
     }
   }
+
   res.status(200).json(task);
 });
 

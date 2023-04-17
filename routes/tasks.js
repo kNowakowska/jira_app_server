@@ -72,8 +72,20 @@ router.get("/:id", async (req, res) => {
 
 router.patch("/:id", async (req, res) => {
   const { id } = req.params;
-  const { title, description, taskPriority, assignedUserIdentifier } = req.body;
-  if (!title && !description && !taskPriority && !assignedUserIdentifier) {
+  const {
+    title,
+    description,
+    taskPriority,
+    assignedUserIdentifier,
+    loggedTime,
+  } = req.body;
+  if (
+    !title &&
+    !description &&
+    !taskPriority &&
+    !assignedUserIdentifier &&
+    !loggedTime
+  ) {
     res.status(400).json(NoRequiredData);
     return;
   }
@@ -98,6 +110,7 @@ router.patch("/:id", async (req, res) => {
     title: title || updateTask.title,
     description: description || updateTask.description,
     taskPriority: taskPriority || updateTask.taskPriority,
+    loggedTime: +loggedTime || updateTask.loggedTime,
   };
 
   if (assignedUserIdentifier) {
