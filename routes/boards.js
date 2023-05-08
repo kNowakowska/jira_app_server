@@ -126,6 +126,10 @@ router.get("/", async (req, res) => {
             },
           },
         },
+        where: {
+          isArchived: false,
+          isDeleted: false,
+        },
       },
     },
   });
@@ -184,6 +188,10 @@ router.get("/contributed", async (req, res) => {
             },
           },
         },
+        where: {
+          isArchived: false,
+          isDeleted: false,
+        },
       },
     },
   });
@@ -240,6 +248,10 @@ router.get("/owned", async (req, res) => {
             },
           },
         },
+        where: {
+          isArchived: false,
+          isDeleted: false,
+        },
       },
     },
   });
@@ -268,7 +280,11 @@ router.get("/:id", async (req, res) => {
           identifier: true,
         },
       },
-      tasks: true,
+      tasks: {
+        where: {
+          isDeleted: false,
+        },
+      },
     },
   });
 
@@ -481,6 +497,7 @@ router.get("/:boardId/tasks", async (req, res) => {
 
   const filters = {
     isArchived: false,
+    isDeleted: false,
     board: {
       identifier: boardId,
     },
@@ -574,7 +591,7 @@ router.post("/:boardId/tasks", async (req, res) => {
   if (loggedTime) {
     data["loggedTime"] = +loggedTime;
   }
-  
+
   try {
     task = await prisma.task.create({
       data: data,
