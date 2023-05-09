@@ -8,7 +8,8 @@
     "docker:up": "docker-compose -f docker-compose-test.yml up -d",
     "docker:down": "docker-compose down",
     "test": "dotenv -e .env.test yarn docker:up && dotenv -e .env.test yarn prisma migrate deploy && dotenv -e .env.test jest -i --coverage",
-    "migrate:postgres": "dotenv -e .env.test npx prisma migrate dev"
+    "migrate:postgres": "dotenv -e .env.test npx prisma migrate dev",
+    "build": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^4.6.1",
@@ -42,5 +43,8 @@
       "**/routes/*.{js,jsx}",
       "!**/node_modules/**"
   ]
+},
+"engines": {
+  "node": "v17.7.2"
 }
 }
