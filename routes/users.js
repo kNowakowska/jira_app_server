@@ -74,6 +74,7 @@ router.post("/", async (req, res) => {
         surname,
         email,
         password: encryptedPswd,
+        registered: new Date(),
       },
     });
   } catch (e) {

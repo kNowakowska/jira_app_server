@@ -127,7 +127,6 @@ router.get("/", async (req, res) => {
           },
         },
         where: {
-          isArchived: false,
           isDeleted: false,
         },
       },
@@ -189,7 +188,6 @@ router.get("/contributed", async (req, res) => {
           },
         },
         where: {
-          isArchived: false,
           isDeleted: false,
         },
       },
@@ -249,7 +247,6 @@ router.get("/owned", async (req, res) => {
           },
         },
         where: {
-          isArchived: false,
           isDeleted: false,
         },
       },
@@ -329,6 +326,7 @@ router.post("/", async (req, res) => {
       data: {
         name,
         shortcut,
+        createdDate: new Date(),
         owner: {
           connect: {
             identifier: req.user.identifier,

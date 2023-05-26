@@ -36,6 +36,7 @@ model User {
   contributedBoards Board[]   @relation("ContributedBoards")
   createdComments   Comment[]
   isArchived        Boolean   @default(false) @db.Boolean
+  registered        DateTime? @db.Date
 }
 
 model Board {
@@ -47,6 +48,7 @@ model Board {
   contributors User[]   @relation("ContributedBoards")
   tasks        Task[]
   isArchived   Boolean @default(false) @db.Boolean
+  createdDate  DateTime? @db.Date
 }
 
 model Task {
