@@ -69,7 +69,7 @@ model Task {
   boardId        String        @db.Uuid
   board          Board         @relation(fields: [boardId], references: [identifier], onDelete: Cascade)
   isArchived     Boolean       @default(false) @db.Boolean
-  isDeleted    Boolean   @default(false) @db.Boolean
+  isDeleted      Boolean       @default(false) @db.Boolean
 }
 
 model Comment {

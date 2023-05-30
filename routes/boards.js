@@ -125,6 +125,12 @@ router.get("/", async (req, res) => {
               identifier: true,
             },
           },
+          board: {
+            select: {
+              shortcut: true,
+              name: true
+            }
+          }
         },
         where: {
           isDeleted: false,
@@ -186,6 +192,12 @@ router.get("/contributed", async (req, res) => {
               identifier: true,
             },
           },
+          board: {
+            select: {
+              shortcut: true,
+              name: true
+            }
+          }
         },
         where: {
           isDeleted: false,
@@ -245,6 +257,12 @@ router.get("/owned", async (req, res) => {
               identifier: true,
             },
           },
+          board: {
+            select: {
+              shortcut: true,
+              name: true
+            }
+          }
         },
         where: {
           isDeleted: false,
